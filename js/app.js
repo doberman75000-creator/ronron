@@ -3,7 +3,7 @@ import { sons, activerSons } from './sons.js';
 import { vibrer } from './haptique.js';
 import * as D from './donnees.js';
 
-export const VERSION_APP = '1.2.0';
+export const VERSION_APP = '1.2.1';
 const $app = document.getElementById('app');
 const nb = ' ';
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -416,7 +416,7 @@ ecrans.quetes = () => {
     ${nq === 3 ? `<div class="chanson pop"><div style="position:relative;width:96px;height:96px;flex:none"><div class="danse">${chat({ stade: D.stadeActuel(), taille: 96, humeur: 'joie' })}</div></div><div style="flex:1;display:flex;flex-direction:column;gap:4px"><b class="titre-font" style="font-size:18px;font-weight:600;color:#4A3000">Les 3 quêtes du jour${nb}!</b><span style="font-size:13px;font-weight:700;color:#5C3D00">${esc(r.nom)} te chante sa chanson. +${D.BONUS_QUETES} croquettes bonus.</span><button class="lien-pilule" type="button" data-a="chanter">${I.note(16)} Réécouter</button></div></div>` : ''}
     <a class="carte chacha" href="#/boutique" style="text-decoration:none">
       <div style="display:flex;align-items:center;gap:10px"><span class="etoile-noel" aria-hidden="true">${I.etoile(30)}</span>
-      <div style="flex:1"><span class="maj petit" style="color:var(--rouille)">Quête spéciale de Noël</span><br><b class="titre-font" style="font-size:18px;font-weight:600">Super Chacha de Noël</b><br><span class="petit">${e.superChacha ? `Accomplie le ${D.dateCourte(e.superChacha)} : ${esc(r.nom)} est devenue Mère Noël.` : `Réunis la tenue de Noël (${D.PIECES_NOEL.filter((id) => e.possede.includes(id)).length} / 5 pièces) et porte-la en entier.`}</span></div>${e.superChacha ? `<span class="puce menthe">${I.check(14)}</span>` : I.chevron()}</div>
+      <div style="flex:1"><span class="maj petit" style="color:var(--rouille)">Quête spéciale</span><br><b class="titre-font" style="font-size:18px;font-weight:600">Super Chacha de Noël</b><br><span class="petit">${e.superChacha ? `Accomplie le ${D.dateCourte(e.superChacha)} : ${esc(r.nom)} est devenue Mère Noël.` : `Réunis la tenue de Noël (${D.PIECES_NOEL.filter((id) => e.possede.includes(id)).length} / 5 pièces) et porte-la en entier.`}</span></div>${e.superChacha ? `<span class="puce menthe">${I.check(14)}</span>` : I.chevron()}</div>
     </a>
     <section class="defi">
       <div style="display:flex;justify-content:space-between"><span class="maj" style="font-size:12px;font-weight:800;color:#E9CDB3">Défi de la semaine</span><span style="font-size:12px;font-weight:700;color:#E9CDB3">${pluriel(defi.joursRestants, 'jour restant', 'jours restants')}</span></div>
@@ -471,7 +471,7 @@ ecrans.boutique = () => {
     <section class="carte chacha">
       <div style="display:flex;align-items:center;gap:10px">
         <span class="etoile-noel" aria-hidden="true">${I.etoile(30)}</span>
-        <div style="flex:1"><b class="titre-font" style="font-size:18px;font-weight:600">Quête de Noël : Super Chacha</b><br><span class="petit">${e.superChacha ? `Accomplie le ${D.dateCourte(e.superChacha)}. ` : ''}Réunis et porte les 5 pièces légendaires de Noël : ${esc(r.nom)} se transforme en Mère Noël.</span></div>
+        <div style="flex:1"><b class="titre-font" style="font-size:18px;font-weight:600">Super Chacha de Noël</b><br><span class="petit">${e.superChacha ? `Accomplie le ${D.dateCourte(e.superChacha)}. ` : ''}Réunis et porte les 5 pièces légendaires de Noël : ${esc(r.nom)} se transforme en Mère Noël.</span></div>
       </div>
       <div class="pieces-noel">${D.PIECES_NOEL.map((id) => `<span class="${e.possede.includes(id) ? (porte.includes(id) ? 'porte' : 'ok') : ''}" title="${D.article(id).nom}">${chatSVG({ stade, taille: 50, tenue: [id], silhouette: !e.possede.includes(id) })}</span>`).join('')}</div>
       <div style="display:flex;justify-content:space-between;align-items:center"><span class="petit">${nbNoel} / 5 pièces dans ton dressing</span>${e.superChacha ? `<button class="puce encre" type="button" data-a="revoirChacha" style="border:none;min-height:34px">${complet ? 'Revoir la transformation' : 'Remettre la tenue'}</button>` : ''}</div>

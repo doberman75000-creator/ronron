@@ -1,6 +1,6 @@
 // Ronron — service worker : l'appli marche hors ligne et se met à jour proprement.
 // ⚠️ À CHAQUE MISE À JOUR : augmente VERSION (et VERSION_APP dans js/app.js).
-const VERSION = '1.2.0';
+const VERSION = '1.2.1';
 const CACHE = 'ronron-' + VERSION;
 const FICHIERS = [
   './', './index.html', './manifest.webmanifest',

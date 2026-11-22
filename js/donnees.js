@@ -353,7 +353,7 @@ export function badges() {
     { id: 'semaine', nom: 'Semaine de ronron', detail: maxSerie >= 7 ? '7 jours sous l’objectif' : `${Math.min(7, serieRonron())} / 7 jours`, ok: maxSerie >= 7, progres: Math.min(1, serieRonron() / 7), icone: 'coeur' },
     { id: 'parfaite', nom: 'Journée parfaite', detail: 'Objectif tenu + 3 quêtes', ok: parfaite, icone: 'soleil' },
     { id: 'nuit', nom: 'Nuit calme', detail: nuits >= 5 ? 'Rien après 22 h, 5 soirs' : `${nuits} / 5 soirs`, ok: nuits >= 5, icone: 'lune' },
-    { id: 'chacha', nom: 'Super Chacha de Noël', detail: etat.superChacha ? 'Mère Noël débloquée' : `Quête de Noël : ${PIECES_NOEL.filter((id) => etat.possede.includes(id)).length} / 5`, ok: !!etat.superChacha, icone: 'etoile' },
+    { id: 'chacha', nom: 'Super Chacha de Noël', detail: etat.superChacha ? 'Mère Noël débloquée' : `${PIECES_NOEL.filter((id) => etat.possede.includes(id)).length} / 5 pièces`, ok: !!etat.superChacha, icone: 'etoile' },
     { id: 'vies', nom: 'Neuf vies', detail: maxZero >= 30 ? '30 jours sans fumer' : 'Secret', ok: maxZero >= 30, secret: maxZero < 30, icone: 'cadenas' },
   ];
 }
