@@ -233,3 +233,39 @@ details.aide ol { margin: 4px 0 6px; padding-left: 20px; font-size: 14px; line-h
 .pulse { animation: pulse .35s ease-out; }
 body.sans-anim *, body.sans-anim *::before, body.sans-anim *::after { animation: none !important; transition: none !important; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ---------- Boutique d'hiver (1.1) ---------- */
+.onglets { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.onglets a { font-size: 10.5px; }
+.filtres { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 2px 16px; }
+.filtres::-webkit-scrollbar { display: none; }
+.filtre { flex: none; min-height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--bord-2); background: #fff; font-size: 13px; font-weight: 800; color: var(--brun-3); }
+.filtre[aria-pressed="true"] { background: var(--encre); border-color: var(--encre); color: var(--creme); }
+.article .puce { align-self: flex-start; font-size: 11px; padding: 3px 8px; }
+.article.noel { border-color: #F2C94C; box-shadow: inset 0 0 0 1px #FFE7A8; }
+.chacha { display: flex; flex-direction: column; gap: 10px; background: linear-gradient(#FFFDF8, #FFF4E6); border-color: #F2C94C; }
+.etoile-noel { width: 46px; height: 46px; border-radius: 23px; background: #2A2246; display: flex; align-items: center; justify-content: center; flex: none; }
+.pieces-noel { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.pieces-noel span { display: flex; justify-content: center; border-radius: 14px; background: #F1E6DA; padding: 2px 0; border: 2px solid transparent; }
+.pieces-noel span.ok { background: #FFE7A8; }
+.pieces-noel span.porte { background: #FFE7A8; border-color: #C8283C; }
+
+/* Transformation en Mère Noël */
+.fete.transfo { background: radial-gradient(circle at 50% 40%, #3E3470, #1D1733 70%); }
+.neige { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.neige span { position: absolute; top: -30px; opacity: .85; animation: chute 4s linear infinite both; }
+.scene-transfo { position: relative; width: 280px; height: 280px; display: flex; align-items: center; justify-content: center; }
+.orbite { position: absolute; inset: 0; animation: orbite 2.3s cubic-bezier(.5,.1,.5,1) forwards; }
+.etoile-orbite { position: absolute; left: 50%; top: -6px; transform: translateX(-50%); filter: drop-shadow(0 0 10px #F2C94C) drop-shadow(0 0 22px #F2B12E); animation: scintille .5s ease-in-out infinite; }
+.transfo.fini .orbite { animation: none; transform: none; }
+.transfo.fini .etoile-orbite { top: -18px; animation: brille 1.6s ease-in-out infinite; }
+.chat-transfo { position: relative; animation: tourne 2.3s ease-in-out both; }
+.transfo.fini .chat-transfo { animation: pop .6s ease-out both; }
+.flash { position: absolute; inset: 20px; border-radius: 50%; background: radial-gradient(#FFFFFF, rgba(255,255,255,0) 70%); opacity: 0; animation: flash 2.6s ease-out both; pointer-events: none; }
+.transfo .apparait { opacity: 0; }
+.transfo.fini .apparait { opacity: 1; animation: pop .5s ease-out .3s both; }
+@keyframes orbite { from { transform: rotate(0deg) } to { transform: rotate(1080deg) } }
+@keyframes tourne { 0% { transform: scale(1) } 30% { transform: scale(.96) rotate(-4deg) } 60% { transform: scale(1.04) rotate(4deg) } 85% { transform: scale(.9); filter: brightness(1.8) } 100% { transform: scale(1); filter: brightness(1) } }
+@keyframes flash { 0%, 75% { opacity: 0 } 88% { opacity: 1 } 100% { opacity: 0 } }
+@keyframes brille { 0%,100% { transform: translateX(-50%) scale(1) } 50% { transform: translateX(-50%) scale(1.15) } }
+.transfo .fete-contenu { z-index: 1; }

@@ -37,7 +37,9 @@ Sinon, **Commencer de zéro** : on indique combien de cigarettes par jour aujour
 | Corriger une erreur | Accueil → « Annuler la dernière », ou Historique → Corriger un jour |
 | Faire le bilan du soir et caresser Miette | Accueil → icône lune |
 | Valider un palier | Quand la moyenne des 3 derniers jours passe sous l’objectif, un bandeau doré apparaît. C’est elle qui accepte ou attend. |
-| Quêtes, badges, boutique | Onglet Quêtes |
+| Quêtes et badges | Onglet Quêtes |
+| Habiller Miette, ouvrir un cadeau surprise | Onglet Boutique (22 articles d’hiver, 5 raretés, un article par emplacement) |
+| Super Chacha de Noël | Porter les 5 pièces légendaires de Noël : Miette se transforme en Mère Noël |
 | Changer l’objectif, le prix, le nom du chaton, le son | Onglet Réglages |
 
 **Rappel du soir :** une web app ne peut pas programmer de notification toute seule sur iPhone. On passe par l’app **Raccourcis** → Automatisation → **+** → Heure de la journée (22:30, quotidiennement, exécuter immédiatement) → action **Ouvrir l’app** → Ronron.

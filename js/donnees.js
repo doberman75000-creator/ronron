@@ -24,20 +24,78 @@ export const PALIERS = [
 ];
 export const seuilStade = (ref, stade) => stade >= 6 ? 0 : Math.floor(ref * (1 - PALIERS[stade - 1].baisse));
 
-export const BOUTIQUE = [
-  { id: 'noeud', nom: 'Nœud papillon', prix: 300 },
-  { id: 'bonnet', nom: 'Bonnet en laine', prix: null, defi: true },
-  { id: 'couronne', nom: 'Couronne de fleurs', prix: 1200 },
+// ---------- Boutique ----------
+// Raretés : le prix monte avec la rareté. Chances = tirage du cadeau surprise.
+export const RARETES = [
+  { id: 'commun', nom: 'Commun', prix: 100, chance: 50, fond: '#F1E6DA', texte: '#6B5442' },
+  { id: 'peu-commun', nom: 'Peu commun', prix: 200, chance: 28, fond: '#DDF3EA', texte: '#1F6B51' },
+  { id: 'rare', nom: 'Rare', prix: 350, chance: 15, fond: '#E1E9F7', texte: '#2B4C8C' },
+  { id: 'epique', nom: 'Épique', prix: 500, chance: 5, fond: '#E7DEFA', texte: '#5B3FC4' },
+  { id: 'legendaire', nom: 'Légendaire', prix: 700, chance: 2, fond: '#FFE7A8', texte: '#7A4E00' },
 ];
-// Cadeau surprise : prix fixe, tirage parmi les articles existants.
-// Doublon : la moitié du prix est rendue (on ne peut donc jamais y gagner en boucle).
-export const CADEAU = { prix: 400, rembourseDoublon: 200, chances: { noeud: 60, bonnet: 30, couronne: 10 } };
-export function tirerCadeau(alea = Math.random()) {
+export const rarete = (id) => RARETES.find((r) => r.id === id);
+// Un seul objet par emplacement : un nouvel objet remplace celui du même emplacement.
+export const EMPLACEMENTS = [
+  { id: 'tete', nom: 'Bonnets' },
+  { id: 'cou', nom: 'Écharpes' },
+  { id: 'corps', nom: 'Manteaux' },
+  { id: 'pattesAvant', nom: 'Moufles' },
+  { id: 'pattesArriere', nom: 'Chaussettes' },
+  { id: 'queue', nom: 'Queue' },
+];
+const A = (id, nom, emplacement, rar, extra = {}) => ({ id, nom, emplacement, rarete: rar, prix: rarete(rar).prix, ...extra });
+export const BOUTIQUE = [
+  A('bonnet', 'Bonnet en laine', 'tete', 'commun', { defi: true }),
+  A('bonnet-pompon', 'Bonnet à pompon', 'tete', 'commun'),
+  A('echarpe-rayee', 'Écharpe rayée', 'cou', 'commun'),
+  A('cache-cou', 'Cache-cou polaire', 'cou', 'commun'),
+  A('moufles-laine', 'Moufles en laine', 'pattesAvant', 'commun'),
+  A('chaussettes-rayees', 'Chaussettes rayées', 'pattesArriere', 'commun'),
+  A('noeud', 'Nœud papillon', 'cou', 'peu-commun'),
+  A('cache-oreilles', 'Cache-oreilles', 'tete', 'peu-commun'),
+  A('echarpe-tricot', 'Grosse écharpe', 'cou', 'peu-commun'),
+  A('pull-flocons', 'Pull à flocons', 'corps', 'peu-commun'),
+  A('moufles-flocons', 'Moufles flocons', 'pattesAvant', 'peu-commun'),
+  A('pompon-queue', 'Pompon de queue', 'queue', 'peu-commun'),
+  A('doudoune', 'Doudoune', 'corps', 'rare'),
+  A('manteau-laine', 'Manteau en laine', 'corps', 'rare'),
+  A('chapka', 'Chapka', 'tete', 'rare'),
+  A('couronne', 'Couronne de fleurs', 'tete', 'epique'),
+  A('manteau-fourrure', 'Manteau à col fourrure', 'corps', 'epique'),
+  A('bonnet-noel', 'Bonnet de Noël', 'tete', 'legendaire', { noel: true }),
+  A('manteau-noel', 'Manteau de Noël', 'corps', 'legendaire', { noel: true }),
+  A('moufles-noel', 'Moufles de Noël', 'pattesAvant', 'legendaire', { noel: true }),
+  A('chaussettes-noel', 'Chaussettes de Noël', 'pattesArriere', 'legendaire', { noel: true }),
+  A('chaussette-queue-noel', 'Chaussette de Noël pour la queue', 'queue', 'legendaire', { noel: true }),
+];
+export const article = (id) => BOUTIQUE.find((a) => a.id === id);
+export const PIECES_NOEL = BOUTIQUE.filter((a) => a.noel).map((a) => a.id);
+
+// Cadeau surprise : on tire d'abord la rareté, puis un objet de cette rareté
+// pas encore possédé (protection contre les doublons). Si toute la rareté est
+// déjà possédée, la moitié du prix est rendue : impossible d'y gagner en boucle.
+export const CADEAU = { prix: 180, rembourseDoublon: 90 };
+export function tirerCadeau(possede, alea1 = Math.random(), alea2 = Math.random()) {
   let cumul = 0;
-  const total = Object.values(CADEAU.chances).reduce((s, p) => s + p, 0);
-  for (const [id, p] of Object.entries(CADEAU.chances)) { cumul += p / total; if (alea < cumul) return id; }
-  return Object.keys(CADEAU.chances).pop();
+  let rar = RARETES[RARETES.length - 1];
+  for (const r of RARETES) { cumul += r.chance / 100; if (alea1 < cumul) { rar = r; break; } }
+  const libres = BOUTIQUE.filter((a) => a.rarete === rar.id && !possede.includes(a.id));
+  if (!libres.length) return { rarete: rar.id, article: null };
+  return { rarete: rar.id, article: libres[Math.min(libres.length - 1, Math.floor(alea2 * libres.length))] };
 }
+
+// Tenue portée : { emplacement: idArticle }. Reprend l'ancien champ « porte » (v1.0).
+export function migrerTenue(e) {
+  if (!e) return false;
+  let change = false;
+  if (!Array.isArray(e.possede)) { e.possede = []; change = true; }
+  if (!e.tenue || typeof e.tenue !== 'object') { e.tenue = {}; change = true; }
+  if (e.porte) { const a = article(e.porte); if (a) e.tenue[a.emplacement] = a.id; e.porte = null; change = true; }
+  return change;
+}
+export const tenueListe = (e = etat) => Object.values((e && e.tenue) || {}).filter(Boolean);
+export const noelComplet = (e = etat) => PIECES_NOEL.every((id) => tenueListe(e).includes(id));
+
 export const QUETES = [
   { id: 'reveil', titre: 'Réveil tranquille', desc: 'Première cigarette après 9 h', gain: 10 },
   { id: 'cafe', titre: 'Café solo', desc: 'Un café sans cigarette à côté', gain: 5 },
@@ -57,6 +115,7 @@ export function charger() {
     const brut = localStorage.getItem(CLE);
     etat = brut ? JSON.parse(brut) : null;
   } catch (e) { etat = null; }
+  if (etat && migrerTenue(etat)) enregistrer();
   return etat;
 }
 export const lire = () => etat;
@@ -89,6 +148,7 @@ export function nouvelEtat({ nom = 'Miette', reference = 15, paquet = 20, prix =
     depenses: [],
     possede: [],
     porte: null,
+    tenue: {},
     refusPalier: null,
     sauvegarde: null,
     vu: { stade: null, etoiles: null },
@@ -100,7 +160,9 @@ export function demarrer(e) { etat = e; enregistrer(); }
 export function importer(json) {
   if (!json || typeof json !== 'object') throw new Error('Fichier illisible.');
   if (json.format === 'ronron-sauvegarde/1' && json.etat) {
-    return Object.assign(nouvelEtat(), json.etat);
+    const e = Object.assign(nouvelEtat(), json.etat);
+    migrerTenue(e);
+    return e;
   }
   if (json.format === 'ronron-historique/1') {
     const r = json.reglages || {};

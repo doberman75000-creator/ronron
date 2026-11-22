@@ -3,14 +3,14 @@ import { sons, activerSons } from './sons.js';
 import { vibrer } from './haptique.js';
 import * as D from './donnees.js';
 
-export const VERSION_APP = '1.0.1';
+export const VERSION_APP = '1.1.0';
 const $app = document.getElementById('app');
 const nb = ' ';
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fr = (n, d = 0) => Number(n).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 const euros = (n, d = 0) => fr(n, d) + nb + '€';
 const pluriel = (n, un, plusieurs) => `${fr(n)} ${n > 1 ? plusieurs : un}`;
-const ui = { confirmEffacer: false, installVu: sessionStorage.getItem('ronron:installVu') === '1', depart: false };
+const ui = { filtre: 'tout', confirmEffacer: false, installVu: sessionStorage.getItem('ronron:installVu') === '1', depart: false };
 
 // ---------- Icônes ----------
 const svg = (w, inner, extra = '') => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" aria-hidden="true" ${extra}>${inner}</svg>`;
@@ -38,6 +38,7 @@ const I = {
   partager: (w = 20) => svg(w, '<path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>', trait),
   poisson: (w = 20) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 12 L22 7 L21 12 L22 17 Z" fill="#C2501A"/><ellipse cx="10" cy="12" rx="8" ry="5" fill="#E07A35"/><circle cx="6.5" cy="11" r="1.3" fill="#FFF4E6"/><path d="M11 9.5 Q13 12 11 14.5" fill="none" stroke="#C2501A" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   etoile: (w = 15, plein = true) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z" fill="${plein ? '#F2B12E' : '#E9D8C4'}"/></svg>`,
+  cadeau: (w = 24) => svg(w, '<rect x="3" y="9" width="18" height="12" rx="2"/><path d="M3 13h18M12 9v12"/><path d="M12 9C10 5 6 5 6.5 7.5 7 9 12 9 12 9zM12 9c2-4 6-4 5.5-1.5C17 9 12 9 12 9z"/>', trait),
   etoileTrait: (w = 22) => svg(w, '<path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.4 7.2 17.9l.9-5.4-3.9-3.8 5.4-.8z"/>', trait),
 };
 const etoiles = (n, w = 15) => `<span class="etoiles" role="img" aria-label="${n} étoile${n > 1 ? 's' : ''} sur 3">${[0, 1, 2].map((i) => I.etoile(w, i < n)).join('')}</span>`;
@@ -45,7 +46,7 @@ const icBadge = { patte: I.patte(26), etoile: I.etoileTrait(24), pieces: I.piece
 
 // ---------- Utilitaires d'écran ----------
 function onglets(actif) {
-  const o = [['accueil', 'Accueil', I.patte()], ['parcours', 'Parcours', I.drapeau()], ['quetes', 'Quêtes', I.cible()], ['reglages', 'Réglages', I.reglages()]];
+  const o = [['accueil', 'Accueil', I.patte()], ['parcours', 'Parcours', I.drapeau()], ['quetes', 'Quêtes', I.cible()], ['boutique', 'Boutique', I.cadeau()], ['reglages', 'Réglages', I.reglages()]];
   return `<nav class="onglets" aria-label="Navigation principale">${o.map(([id, lib, ic]) => `<a href="#/${id}" ${id === actif ? 'aria-current="page"' : ''}>${ic}${lib}</a>`).join('')}</nav>`;
 }
 let minuterieToast = null;
@@ -81,7 +82,7 @@ function derniereCigarette() {
   }
   return null;
 }
-const chat = (o) => chatSVG({ accessoire: D.lire().porte, ...o });
+const chat = (o) => chatSVG({ tenue: D.lire().tenue, ...o });
 function progressionStade() {
   const ref = D.R().reference, st = D.stadeActuel(), obj = D.objectifActuel();
   if (st >= 6) return { texte: 'Stade ultime atteint', droite: '', pct: 100 };
@@ -277,7 +278,8 @@ function fete({ titre, sousTitre, stade, nbEtoiles, prochain }) {
   sons.fete();
 }
 
-function revelerCadeau(article, doublon) {
+function revelerCadeau(tirage) {
+  const art = tirage.article, rar = D.rarete(tirage.rarete);
   const el = document.createElement('div');
   el.className = 'fete';
   el.setAttribute('role', 'dialog');
@@ -285,13 +287,13 @@ function revelerCadeau(article, doublon) {
   const pluie = Array.from({ length: 12 }, (_, i) => `<span style="left:${4 + ((i * 97) % 92)}%;animation-delay:${((i * 37) % 120) / 100}s">${i % 2 ? I.etoile(20) : `<span style="color:#F28C38">${I.patte(22)}</span>`}</span>`).join('');
   el.innerHTML = `<div class="pluie" aria-hidden="true">${pluie}</div>
     <div class="fete-contenu" style="justify-content:center">
-      <span class="puce pop" style="background:#FFE7A8;color:#6B4500;font-size:13px;letter-spacing:.08em">CADEAU SURPRISE</span>
-      <div style="position:relative;width:232px;height:232px"><div class="halo" aria-hidden="true"></div><div class="saute">${chatSVG({ stade: Math.min(D.stadeActuel(), 5), taille: 232, humeur: 'joie', accessoire: article.id })}</div></div>
-      <h1 class="titre-font pop" style="margin:0;text-align:center;font-size:30px;font-weight:600;animation-delay:.3s">${article.nom}</h1>
-      <p class="texte-doux" style="text-align:center;font-size:15px">${doublon ? `Déjà dans ton dressing${nb}: ${fr(D.CADEAU.rembourseDoublon)} croquettes rendues.` : `Ajouté à ton dressing et porté par ${esc(D.R().nom)}.`}</p>
+      <span class="puce pop" style="background:${rar.fond};color:${rar.texte};font-size:13px;letter-spacing:.08em">${rar.nom.toUpperCase()}</span>
+      <div style="position:relative;width:232px;height:232px"><div class="halo" aria-hidden="true" style="background:${rar.fond}"></div><div class="saute">${chatSVG({ stade: Math.min(D.stadeActuel(), 5), taille: 232, humeur: 'joie', tenue: art ? [art.id] : D.tenueListe() })}</div></div>
+      <h1 class="titre-font pop" style="margin:0;text-align:center;font-size:30px;font-weight:600;animation-delay:.3s">${art ? art.nom : 'Collection ' + rar.nom.toLowerCase() + ' complète'}</h1>
+      <p class="texte-doux" style="text-align:center;font-size:15px">${art ? `Ajouté à ton dressing et porté par ${esc(D.R().nom)}.` : `Tu as déjà tous les articles ${rar.nom.toLowerCase()}s${nb}: ${fr(D.CADEAU.rembourseDoublon)} croquettes rendues.`}</p>
       <button class="btn encre" type="button" data-fermer style="margin-top:12px">Super</button>
     </div>`;
-  el.querySelector('[data-fermer]').addEventListener('click', () => { el.remove(); afficher(); });
+  el.querySelector('[data-fermer]').addEventListener('click', () => { el.remove(); afficher(); if (tirage.avantNoel === false) verifierNoel(false); });
   document.body.appendChild(el);
   el.querySelector('[data-fermer]').focus({ preventScroll: true });
   sons.chanson();
@@ -399,14 +401,6 @@ ecrans.quetes = () => {
   const defi = D.defiSemaine();
   const bdg = D.badges();
   const solde = D.croquettes();
-  const articles = D.BOUTIQUE.map((a) => {
-    const possede = e.possede.includes(a.id), porte = e.porte === a.id;
-    let action;
-    if (possede) action = `<button class="puce ${porte ? 'menthe' : 'encre'}" type="button" data-a="porter" data-id="${a.id}" style="border:none">${porte ? 'Porté' : 'Le porter'}</button>`;
-    else if (a.defi) action = defi.gagne ? `<button class="puce encre" type="button" data-a="recuperer" data-id="${a.id}" style="border:none">Le récupérer</button>` : '<span class="puce grise">Via le défi</span>';
-    else action = solde >= a.prix ? `<button class="puce peche" type="button" data-a="acheter" data-id="${a.id}" style="border:none">${fr(a.prix)} · Acheter</button>` : `<span class="puce grise">${fr(a.prix)}</span>`;
-    return `<div class="article"><div class="vitrine">${chatSVG({ stade: Math.min(D.stadeActuel(), 5), taille: 76, accessoire: a.id })}</div><b>${a.nom}</b>${action}</div>`;
-  }).join('');
   return `<main class="ecran">
     <header class="entete">
       <h1>Quêtes</h1>
@@ -426,16 +420,103 @@ ecrans.quetes = () => {
     </section>
     <h2 class="section-titre">Badges</h2>
     <div class="grille3">${bdg.map((b) => `<div class="badge ${b.secret ? 'secret' : b.ok ? '' : 'ko'}"><span class="ic">${icBadge[b.icone]}</span><b>${b.nom}</b><small>${b.detail}</small></div>`).join('')}</div>
-    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:0 4px"><h2 class="section-titre" style="margin:0">Boutique de ${esc(r.nom)}</h2><span class="petit">en croquettes</span></div>
-    <div class="grille3">${articles}</div>
-    <section class="carte" style="display:flex;flex-direction:column;gap:10px">
-      <div style="display:flex;justify-content:space-between;align-items:baseline"><b class="titre-font" style="font-size:18px;font-weight:600">Cadeau surprise</b><span class="puce peche">${fr(D.CADEAU.prix)} croquettes</span></div>
-      <div class="petit" style="display:flex;flex-direction:column;gap:2px">${D.BOUTIQUE.map((a) => `<span style="display:flex;justify-content:space-between"><span>${a.nom}</span><span>${D.CADEAU.chances[a.id]}${nb}%</span></span>`).join('')}</div>
-      <p class="texte-doux" style="font-size:12px">Déjà dans ton dressing${nb}? On te rend ${fr(D.CADEAU.rembourseDoublon)} croquettes.</p>
-      ${solde >= D.CADEAU.prix ? `<button class="btn orange" type="button" data-a="cadeau" style="height:50px;font-size:15px">Ouvrir un cadeau · ${fr(D.CADEAU.prix)}</button>` : `<button class="btn contour" type="button" disabled style="height:50px;font-size:15px;opacity:.6">Il manque ${fr(D.CADEAU.prix - solde)} croquettes</button>`}
-    </section>
+    <a class="carte" href="#/boutique" style="display:flex;align-items:center;gap:8px;text-decoration:none;padding:10px 14px 10px 6px">
+      ${chat({ stade: D.stadeActuel(), taille: 72 })}
+      <span style="flex:1"><b class="titre-font" style="font-size:18px;font-weight:600">Boutique d’hiver</b><br><span class="petit">${D.BOUTIQUE.length} articles · cadeau surprise · tenue de Noël</span></span>${I.chevron()}
+    </a>
   </main>${onglets('quetes')}`;
 };
+
+
+const puceRarete = (id) => { const r = D.rarete(id); return `<span class="puce" style="background:${r.fond};color:${r.texte}">${r.nom}</span>`; };
+ecrans.boutique = () => {
+  const e = D.lire(), r = e.reglages;
+  const solde = D.croquettes();
+  const defi = D.defiSemaine();
+  const porte = D.tenueListe();
+  const stade = Math.min(D.stadeActuel(), 5);
+  const filtres = [['tout', 'Tout'], ...D.EMPLACEMENTS.map((x) => [x.id, x.nom]), ['noel', 'Noël']];
+  const liste = D.BOUTIQUE.filter((a) => ui.filtre === 'tout' || (ui.filtre === 'noel' ? a.noel : a.emplacement === ui.filtre));
+  const cartes = liste.map((a) => {
+    const possede = e.possede.includes(a.id), estPorte = porte.includes(a.id);
+    let action;
+    if (possede) action = `<button class="puce ${estPorte ? 'menthe' : 'encre'}" type="button" data-a="porter" data-id="${a.id}" style="border:none;min-height:34px">${estPorte ? I.check(13) + ' Porté' : 'Porter'}</button>`;
+    else if (a.defi && defi.gagne) action = `<button class="puce encre" type="button" data-a="recuperer" data-id="${a.id}" style="border:none;min-height:34px">Le récupérer</button>`;
+    else if (solde >= a.prix) action = `<button class="puce peche" type="button" data-a="acheter" data-id="${a.id}" style="border:none;min-height:34px">${fr(a.prix)} · Acheter</button>`;
+    else action = `<span class="puce grise">${I.poisson(14)} ${fr(a.prix)}</span>`;
+    return `<div class="article${a.noel ? ' noel' : ''}"><div class="vitrine">${chatSVG({ stade, taille: 76, tenue: [a.id] })}</div>${puceRarete(a.rarete)}<b>${a.nom}</b>${action}</div>`;
+  }).join('');
+  const nbNoel = D.PIECES_NOEL.filter((id) => e.possede.includes(id)).length;
+  const complet = D.noelComplet();
+  return `<main class="ecran">
+    <header class="entete">
+      <h1>Boutique</h1>
+      <span id="solde" class="puce" style="position:relative;background:#fff;border:1px solid var(--bord-2);font-family:Fredoka,sans-serif;font-size:18px;font-weight:600;padding:7px 12px">${I.poisson()} ${fr(solde)}</span>
+    </header>
+    <section class="carte" style="display:flex;align-items:center;gap:6px;padding:10px 14px 10px 4px">
+      ${chat({ stade: D.stadeActuel(), taille: 130 })}
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+        <b class="titre-font" style="font-size:20px;font-weight:600">${complet ? 'Mère Noël' : 'La tenue de ' + esc(r.nom)}</b>
+        <span class="petit">${porte.length ? porte.map((id) => D.article(id).nom).join(' · ') : 'Rien pour l’instant. Touche « Porter » sur un article.'}</span>
+        ${porte.length ? '<button class="lien-texte" type="button" data-a="toutRetirer" style="align-self:flex-start;padding:0">Tout retirer</button>' : ''}
+      </div>
+    </section>
+    <section class="carte chacha">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="etoile-noel" aria-hidden="true">${I.etoile(30)}</span>
+        <div style="flex:1"><b class="titre-font" style="font-size:18px;font-weight:600">Super Chacha de Noël</b><br><span class="petit">Porte les 5 pièces légendaires de Noël et ${esc(r.nom)} se transforme en Mère Noël.</span></div>
+      </div>
+      <div class="pieces-noel">${D.PIECES_NOEL.map((id) => `<span class="${e.possede.includes(id) ? (porte.includes(id) ? 'porte' : 'ok') : ''}" title="${D.article(id).nom}">${chatSVG({ stade, taille: 50, tenue: [id], silhouette: !e.possede.includes(id) })}</span>`).join('')}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="petit">${nbNoel} / 5 pièces dans ton dressing</span>${e.superChacha ? `<button class="puce encre" type="button" data-a="revoirChacha" style="border:none;min-height:34px">${complet ? 'Revoir la transformation' : 'Remettre la tenue'}</button>` : ''}</div>
+    </section>
+    <section class="carte" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><b class="titre-font" style="font-size:18px;font-weight:600">Cadeau surprise</b><span class="puce peche">${fr(D.CADEAU.prix)} croquettes</span></div>
+      <div class="petit" style="display:flex;flex-direction:column;gap:3px">${D.RARETES.map((x) => `<span style="display:flex;justify-content:space-between;align-items:center"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${x.fond};border:1px solid ${x.texte};margin-right:6px;vertical-align:-1px"></i>${x.nom} (${D.BOUTIQUE.filter((a) => a.rarete === x.id).length} articles)</span><span>${x.chance}${nb}%</span></span>`).join('')}</div>
+      <p class="texte-doux" style="font-size:12px">Le cadeau donne un article de la rareté tirée que tu n’as pas encore. Si tu as déjà tous ceux de cette rareté, on te rend ${fr(D.CADEAU.rembourseDoublon)} croquettes.</p>
+      ${solde >= D.CADEAU.prix ? `<button class="btn orange" type="button" data-a="cadeau" style="height:50px;font-size:15px">Ouvrir un cadeau · ${fr(D.CADEAU.prix)}</button>` : `<button class="btn contour" type="button" disabled style="height:50px;font-size:15px;opacity:.6">Il manque ${fr(D.CADEAU.prix - solde)} croquettes</button>`}
+    </section>
+    <div class="filtres" role="group" aria-label="Filtrer par catégorie">${filtres.map(([id, lib]) => `<button type="button" class="filtre" data-a="filtre" data-id="${id}" aria-pressed="${ui.filtre === id}">${lib}</button>`).join('')}</div>
+    <div class="grille3">${cartes}</div>
+    <p class="texte-doux" style="font-size:12px;text-align:center">Un seul article par emplacement : un nouveau bonnet remplace l’ancien.</p>
+  </main>${onglets('boutique')}`;
+};
+
+function transformationNoel() {
+  const r = D.R();
+  const stade = D.stadeActuel();
+  const tenue = D.tenueListe();
+  const sansNoel = tenue.filter((id) => id !== 'manteau-noel');
+  const flocons = Array.from({ length: 22 }, (_, i) => `<span style="left:${(i * 47) % 100}%;animation-delay:${((i * 29) % 300) / 100}s;animation-duration:${3 + ((i * 17) % 30) / 10}s;"><svg width="${10 + (i % 4) * 5}" height="${10 + (i % 4) * 5}" viewBox="0 0 20 20"><path d="M10 1v18M1 10h18M3.6 3.6l12.8 12.8M3.6 16.4L16.4 3.6" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/></svg></span>`).join('');
+  const el = document.createElement('div');
+  el.className = 'fete transfo';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-label', 'Super Chacha de Noël');
+  el.innerHTML = `<div class="neige" aria-hidden="true">${flocons}</div>
+    <div class="fete-contenu" style="justify-content:center">
+      <span class="puce pop" style="background:#FFE7A8;color:#6B4500;font-size:13px;letter-spacing:.08em">SUPER CHACHA DE NOËL</span>
+      <div class="scene-transfo">
+        <div class="orbite" aria-hidden="true"><span class="etoile-orbite">${I.etoile(46)}</span></div>
+        <div class="flash" aria-hidden="true"></div>
+        <div class="chat-transfo">${chatSVG({ stade, taille: 232, tenue: sansNoel, humeur: 'joie' })}</div>
+      </div>
+      <h1 class="titre-font apparait" style="margin:0;text-align:center;font-size:30px;font-weight:600;line-height:1.15;color:#FFF4E6">${esc(r.nom)} devient<br>Mère Noël</h1>
+      <p class="apparait" style="margin:0;text-align:center;font-size:15px;color:#E4DCF7">La tenue complète de Noël est réunie.</p>
+      <button class="btn orange apparait" type="button" data-fermer style="margin-top:12px">Joyeux Noël, ${esc(r.nom)}</button>
+    </div>`;
+  el.querySelector('[data-fermer]').addEventListener('click', () => { el.remove(); afficher(); });
+  document.body.appendChild(el);
+  const rapide = !D.R().anims || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reveler = () => { const c = el.querySelector('.chat-transfo'); if (c) c.innerHTML = chatSVG({ stade, taille: 232, tenue, humeur: 'joie' }); el.classList.add('fini'); sons.chanson(); };
+  if (rapide) reveler(); else { sons.fete(); setTimeout(reveler, 2300); }
+  el.querySelector('[data-fermer]').focus({ preventScroll: true });
+}
+// Appelé après chaque changement de tenue : déclenche la transformation quand la panoplie se complète.
+function verifierNoel(avant) {
+  if (avant || !D.noelComplet()) return false;
+  D.modifier((e) => { if (!e.superChacha) e.superChacha = D.aujourdhui(); });
+  transformationNoel();
+  return true;
+}
 
 ecrans.reglages = () => {
   const e = D.lire(), r = e.reglages;
@@ -616,29 +697,52 @@ const actions = {
   },
   chanter() { sons.chanson(); },
   acheter(el) {
-    const a = D.BOUTIQUE.find((x) => x.id === el.dataset.id);
-    if (!a || D.croquettes() < a.prix) return;
-    D.modifier((e) => { e.depenses.push({ date: D.aujourdhui(), objet: a.id, n: a.prix }); e.possede.push(a.id); e.porte = a.id; });
-    sons.mrrp(); afficher(); toast(`${a.nom} pour ${D.R().nom}${nb}!`);
+    const a = D.article(el.dataset.id);
+    if (!a || D.lire().possede.includes(a.id)) return;
+    if (D.croquettes() < a.prix) { toast('Pas assez de croquettes pour cet article.'); return; }
+    const avant = D.noelComplet();
+    const ok = D.modifier((e) => { e.depenses.push({ date: D.aujourdhui(), objet: a.id, n: a.prix }); e.possede.push(a.id); e.tenue[a.emplacement] = a.id; });
+    if (!ok) { toast('Enregistrement impossible : rien n’a été débité.'); return; }
+    afficher();
+    if (!verifierNoel(avant)) { sons.mrrp(); toast(`${a.nom} pour ${D.R().nom}${nb}!`); }
   },
   cadeau() {
     if (D.croquettes() < D.CADEAU.prix) { toast('Pas assez de croquettes pour ce cadeau.'); return; }
-    const tab = new Uint32Array(1); crypto.getRandomValues(tab);
-    const id = D.tirerCadeau(tab[0] / 4294967296);
-    const article = D.BOUTIQUE.find((a) => a.id === id);
-    let doublon = false;
+    const tab = new Uint32Array(2); crypto.getRandomValues(tab);
+    const tirage = D.tirerCadeau(D.lire().possede, tab[0] / 4294967296, tab[1] / 4294967296);
+    const avant = D.noelComplet();
     const ok = D.modifier((e) => {
       e.depenses.push({ date: D.aujourdhui(), objet: 'cadeau', n: D.CADEAU.prix });
-      doublon = e.possede.includes(id);
-      if (doublon) e.bonus.push({ date: D.aujourdhui(), type: 'cadeau-doublon', n: D.CADEAU.rembourseDoublon });
-      else { e.possede.push(id); e.porte = id; }
+      if (tirage.article) { e.possede.push(tirage.article.id); e.tenue[tirage.article.emplacement] = tirage.article.id; }
+      else e.bonus.push({ date: D.aujourdhui(), type: 'cadeau-doublon', n: D.CADEAU.rembourseDoublon });
     });
     if (!ok) { toast('Enregistrement impossible : rien n’a été débité.'); return; }
     afficher();
-    revelerCadeau(article, doublon);
+    revelerCadeau({ ...tirage, avantNoel: avant });
   },
-  recuperer(el) { D.modifier((e) => { if (!e.possede.includes(el.dataset.id)) e.possede.push(el.dataset.id); e.porte = el.dataset.id; }); sons.chanson(); afficher(); },
-  porter(el) { D.modifier((e) => { e.porte = e.porte === el.dataset.id ? null : el.dataset.id; }); afficher(); },
+  recuperer(el) {
+    const a = D.article(el.dataset.id);
+    if (!a || !D.defiSemaine().gagne) return;
+    D.modifier((e) => { if (!e.possede.includes(a.id)) e.possede.push(a.id); e.tenue[a.emplacement] = a.id; });
+    sons.chanson(); afficher();
+  },
+  porter(el) {
+    const a = D.article(el.dataset.id);
+    if (!a || !D.lire().possede.includes(a.id)) return;
+    const avant = D.noelComplet();
+    D.modifier((e) => { e.tenue[a.emplacement] = e.tenue[a.emplacement] === a.id ? null : a.id; });
+    afficher();
+    verifierNoel(avant);
+  },
+  toutRetirer() { D.modifier((e) => { e.tenue = {}; }); afficher(); },
+  filtre(el) { ui.filtre = el.dataset.id; afficher(); },
+  revoirChacha() {
+    const e = D.lire();
+    if (!D.PIECES_NOEL.every((id) => e.possede.includes(id))) return;
+    D.modifier((x) => { D.PIECES_NOEL.forEach((id) => { const a = D.article(id); x.tenue[a.emplacement] = id; }); });
+    afficher();
+    transformationNoel();
+  },
   bascule(el) { const k = el.dataset.cle; D.modifier((e) => { e.reglages[k] = !e.reglages[k]; }); appliquerReglages(); afficher(); },
   objMoins() { const o = D.objectifActuel(); if (o <= 0) return; D.modifier(() => D.fixerObjectif(o - 1, 'manuel')); afficher(); },
   objPlus() { const o = D.objectifActuel(); if (o >= D.R().reference) return; D.modifier(() => D.fixerObjectif(o + 1, 'manuel')); afficher(); },
