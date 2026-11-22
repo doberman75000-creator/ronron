@@ -3,7 +3,7 @@ import { sons, activerSons } from './sons.js';
 import { vibrer } from './haptique.js';
 import * as D from './donnees.js';
 
-export const VERSION_APP = '1.4.0';
+export const VERSION_APP = '1.5.0';
 const $app = document.getElementById('app');
 const nb = ' ';
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -47,7 +47,7 @@ const icBadge = { patte: I.patte(26), etoile: I.etoileTrait(24), pieces: I.piece
 
 // ---------- Utilitaires d'écran ----------
 function onglets(actif) {
-  const o = [['accueil', 'Accueil', I.patte()], ['parcours', 'Parcours', I.drapeau()], ['historique', 'Historique', I.graphe(24)], ['quetes', 'Quêtes', I.cible()], ['dressing', 'Dressing', I.cintre()], ['boutique', 'Boutique', I.cadeau()], ['reglages', 'Réglages', I.reglages()]];
+  const o = [['accueil', 'Accueil', I.patte()], ['parcours', 'Parcours', I.drapeau()], ['historique', 'Historique', I.graphe(24)], ['quetes', 'Quêtes', I.cible()], ['dressing', 'Dressing', I.cintre()], ['boutique', 'Boutique', I.cadeau()]];
   return `<nav class="onglets" aria-label="Navigation principale">${o.map(([id, lib, ic]) => `<a href="#/${id}" ${id === actif ? 'aria-current="page"' : ''}>${ic}${lib}</a>`).join('')}</nav>`;
 }
 let minuterieToast = null;
@@ -395,7 +395,7 @@ ecrans.historique = () => {
   const hier = D.ajouterJours(t, -1);
   const dateDefaut = manquants[0] || (hier >= r.debut ? hier : t);
   return `<main class="ecran">
-    <div class="entete"><h1>Historique</h1>${e.source ? `<span class="puce menthe">${I.check(14)} Smoless importé</span>` : ''}</div>
+    <div class="entete"><h1>Historique</h1><a class="puce" href="#/reglages" style="min-height:40px;background:#fff;border:1px solid var(--bord-2);text-decoration:none;font-size:13px">${I.reglages(18)} Réglages</a></div>
     <div style="padding:0 4px;margin-top:-8px">
     <p class="texte-doux">Depuis le ${D.dateCourte(r.debut)} · ${pluriel(jours.length, 'jour', 'jours')}.</p></div>
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
@@ -618,6 +618,7 @@ ecrans.reglages = () => {
   const prevus = (e.prevus || []).filter((p) => p.date > D.aujourdhui());
   const save = e.sauvegarde ? D.ecartJours(e.sauvegarde.slice(0, 10), D.aujourdhui()) : null;
   return `<main class="ecran">
+    <a class="retour" href="#/historique" style="margin:-8px 0 -4px 4px">${I.retour()} Historique</a>
     <header style="padding:0 4px"><h1 class="titre-font" style="margin:0;font-size:28px;font-weight:600">Réglages</h1><p class="sous">Tout reste sur ton iPhone. Pas de compte, pas de pub.</p></header>
     <section class="carte" style="display:flex;align-items:center;gap:6px;padding:12px 14px 12px 6px">
       ${chat({ stade: D.stadeActuel(), taille: 72 })}
@@ -671,7 +672,7 @@ ecrans.reglages = () => {
       <span class="petit" style="color:var(--brun)">Un chaton à la fois · version ${VERSION_APP}</span>
       <span style="margin-top:6px;font-size:11px;line-height:1.45;font-weight:600;color:var(--brun-2)">Ronron n’est pas un dispositif médical. C’est un compagnon pour fumer moins, à ton rythme.</span>
     </footer>
-  </main>${onglets('reglages')}`;
+  </main>${onglets('historique')}`;
 };
 
 const estIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);

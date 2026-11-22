@@ -307,3 +307,8 @@ body.sans-anim *, body.sans-anim *::before, body.sans-anim *::after { animation:
 .vetement b { font-size: 12px; line-height: 1.2; }
 .vetement .puce { font-size: 11px; padding: 3px 8px; }
 .vetement.porte { border: 2px solid #2F9E7A; background: #F3FBF7; }
+
+/* ---------- 1.5 : Réglages rangés dans l'Historique ---------- */
+.onglets { grid-template-columns: repeat(6, minmax(0, 1fr)); padding-left: 4px; padding-right: 4px; }
+.onglets a { font-size: 10px; letter-spacing: 0; }
+.onglets a svg { width: 24px; height: 24px; }

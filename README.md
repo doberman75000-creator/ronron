@@ -42,7 +42,7 @@ Sinon, **Commencer de zéro** : on indique combien de cigarettes par jour aujour
 | Changer la tenue avec ses vêtements | Onglet Dressing (« Dressing de » + le nom du chaton) : seulement les vêtements possédés, à mettre ou retirer un par un |
 | Habiller Miette, ouvrir un cadeau surprise | Onglet Boutique (22 articles d’hiver, 5 raretés, un article par emplacement) |
 | Super Chacha de Noël | Porter les 5 pièces légendaires de Noël : Miette se transforme en Mère Noël |
-| Changer l’objectif, le prix, le nom du chaton, le son | Onglet Réglages |
+| Changer l’objectif, le prix, le nom du chaton, le son, sauvegarder | Onglet Historique → bouton Réglages (en haut à droite) |
 
 **Rappel du soir :** une web app ne peut pas programmer de notification toute seule sur iPhone. On passe par l’app **Raccourcis** → Automatisation → **+** → Heure de la journée (22:30, quotidiennement, exécuter immédiatement) → action **Ouvrir l’app** → Ronron.
 
@@ -54,7 +54,7 @@ Sinon, **Commencer de zéro** : on indique combien de cigarettes par jour aujour
 
 Les données vivent dans l’appli. **Si on supprime l’icône Ronron, elles disparaissent.**
 
-- Réglages → **Sauvegarder mes données** → **Enregistrer dans Fichiers** (idéalement dans iCloud Drive).
+- Historique → Réglages → **Sauvegarder mes données** → **Enregistrer dans Fichiers** (idéalement dans iCloud Drive).
 - L’appli rappelle de le faire si la dernière sauvegarde a plus de 14 jours.
 - Pour récupérer (nouvel iPhone, icône supprimée) : réinstaller (étape 1), puis **Reprendre mon historique** avec le fichier `ronron-sauvegarde-AAAA-MM-JJ.json`.
 
