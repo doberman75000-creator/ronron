@@ -39,6 +39,7 @@ Sinon, **Commencer de zéro** : on indique combien de cigarettes par jour aujour
 | Faire le bilan du soir et caresser Miette | Accueil → icône lune |
 | Valider un palier | Quand la moyenne des 3 derniers jours passe sous l’objectif, un bandeau doré apparaît. C’est elle qui accepte ou attend. |
 | Quêtes et badges | Onglet Quêtes |
+| Changer la tenue avec ses vêtements | Onglet Dressing (« Dressing de » + le nom du chaton) : seulement les vêtements possédés, à mettre ou retirer un par un |
 | Habiller Miette, ouvrir un cadeau surprise | Onglet Boutique (22 articles d’hiver, 5 raretés, un article par emplacement) |
 | Super Chacha de Noël | Porter les 5 pièces légendaires de Noël : Miette se transforme en Mère Noël |
 | Changer l’objectif, le prix, le nom du chaton, le son | Onglet Réglages |

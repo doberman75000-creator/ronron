@@ -3,7 +3,7 @@ import { sons, activerSons } from './sons.js';
 import { vibrer } from './haptique.js';
 import * as D from './donnees.js';
 
-export const VERSION_APP = '1.3.0';
+export const VERSION_APP = '1.4.0';
 const $app = document.getElementById('app');
 const nb = ' ';
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -38,6 +38,7 @@ const I = {
   partager: (w = 20) => svg(w, '<path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>', trait),
   poisson: (w = 20) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 12 L22 7 L21 12 L22 17 Z" fill="#C2501A"/><ellipse cx="10" cy="12" rx="8" ry="5" fill="#E07A35"/><circle cx="6.5" cy="11" r="1.3" fill="#FFF4E6"/><path d="M11 9.5 Q13 12 11 14.5" fill="none" stroke="#C2501A" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   etoile: (w = 15, plein = true) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z" fill="${plein ? '#F2B12E' : '#E9D8C4'}"/></svg>`,
+  cintre: (w = 24) => svg(w, '<path d="M12 7.5a2 2 0 1 0-2-2"/><path d="M12 7.5v1.5L3 16a1.5 1.5 0 0 0 1 2.7h16a1.5 1.5 0 0 0 1-2.7l-9-7"/>', trait),
   cadeau: (w = 24) => svg(w, '<rect x="3" y="9" width="18" height="12" rx="2"/><path d="M3 13h18M12 9v12"/><path d="M12 9C10 5 6 5 6.5 7.5 7 9 12 9 12 9zM12 9c2-4 6-4 5.5-1.5C17 9 12 9 12 9z"/>', trait),
   etoileTrait: (w = 22) => svg(w, '<path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.4 7.2 17.9l.9-5.4-3.9-3.8 5.4-.8z"/>', trait),
 };
@@ -46,7 +47,7 @@ const icBadge = { patte: I.patte(26), etoile: I.etoileTrait(24), pieces: I.piece
 
 // ---------- Utilitaires d'écran ----------
 function onglets(actif) {
-  const o = [['accueil', 'Accueil', I.patte()], ['parcours', 'Parcours', I.drapeau()], ['historique', 'Historique', I.graphe(24)], ['quetes', 'Quêtes', I.cible()], ['boutique', 'Boutique', I.cadeau()], ['reglages', 'Réglages', I.reglages()]];
+  const o = [['accueil', 'Accueil', I.patte()], ['parcours', 'Parcours', I.drapeau()], ['historique', 'Historique', I.graphe(24)], ['quetes', 'Quêtes', I.cible()], ['dressing', 'Dressing', I.cintre()], ['boutique', 'Boutique', I.cadeau()], ['reglages', 'Réglages', I.reglages()]];
   return `<nav class="onglets" aria-label="Navigation principale">${o.map(([id, lib, ic]) => `<a href="#/${id}" ${id === actif ? 'aria-current="page"' : ''}>${ic}${lib}</a>`).join('')}</nav>`;
 }
 let minuterieToast = null;
@@ -535,6 +536,45 @@ ecrans.boutique = () => {
 function flocons(n) {
   return Array.from({ length: n }, (_, i) => `<span style="left:${(i * 47) % 100}%;animation-delay:${((i * 29) % 300) / 100}s;animation-duration:${3 + ((i * 17) % 30) / 10}s"><svg width="${10 + (i % 4) * 5}" height="${10 + (i % 4) * 5}" viewBox="0 0 20 20"><path d="M10 1v18M1 10h18M3.6 3.6l12.8 12.8M3.6 16.4L16.4 3.6" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/></svg></span>`).join('');
 }
+ecrans.dressing = () => {
+  const e = D.lire(), r = e.reglages;
+  const porte = D.tenueListe();
+  const stade = Math.min(D.stadeActuel(), 5);
+  const possedes = D.BOUTIQUE.filter((a) => e.possede.includes(a.id));
+  const toutNoel = D.PIECES_NOEL.every((id) => e.possede.includes(id));
+  const zones = D.EMPLACEMENTS.map((z) => {
+    const items = possedes.filter((a) => a.emplacement === z.id);
+    if (!items.length) return '';
+    const actuel = e.tenue[z.id] ? D.article(e.tenue[z.id]) : null;
+    return `<section class="carte zone">
+      <div class="zone-tete"><div><span class="maj petit" style="color:var(--brun)">${z.zone}</span><br><b>${actuel ? actuel.nom : 'Rien de porté'}</b></div>
+      ${actuel ? `<button class="puce encre" type="button" data-a="retirer" data-slot="${z.id}" style="border:none;min-height:36px">Retirer</button>` : ''}</div>
+      <div class="grille3">${items.map((a) => {
+        const p = porte.includes(a.id);
+        return `<button type="button" class="vetement${p ? ' porte' : ''}" data-a="porter" data-id="${a.id}" aria-pressed="${p}" aria-label="${p ? 'Retirer' : 'Mettre'} ${a.nom}">
+          <span class="vitrine">${chatSVG({ stade, taille: 70, tenue: [a.id] })}</span>
+          <b>${a.nom}</b>
+          <span class="puce ${p ? 'menthe' : 'peche'}">${p ? I.check(12) + ' Porté' : 'Mettre'}</span>
+        </button>`;
+      }).join('')}</div>
+    </section>`;
+  }).join('');
+  return `<main class="ecran">
+    <header style="padding:0 4px"><h1 class="titre-font" style="margin:0;font-size:28px;font-weight:600">Dressing de ${esc(r.nom)}</h1>
+    <p class="sous">${pluriel(possedes.length, 'vêtement', 'vêtements')} dans le dressing · ${pluriel(porte.length, 'porté', 'portés')}</p></header>
+    <section class="carte" style="display:flex;flex-direction:column;align-items:center;gap:6px">
+      ${chat({ stade: D.stadeActuel(), taille: 190 })}
+      ${D.noelComplet() ? '<span class="puce" style="background:#FFE7A8;color:#7A4E00">Mère Noël</span>' : ''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+        ${porte.length ? '<button class="puce grise" type="button" data-a="toutRetirer" style="border:none;min-height:36px">Tout retirer</button>' : ''}
+        ${toutNoel && !D.noelComplet() ? '<button class="puce encre" type="button" data-a="revoirChacha" style="border:none;min-height:36px">Mettre la tenue de Noël</button>' : ''}
+      </div>
+    </section>
+    ${possedes.length ? zones : `<section class="carte" style="text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center"><b class="titre-font" style="font-size:18px;font-weight:600">Le dressing est vide</b><p class="texte-doux">Les vêtements achetés ou gagnés dans les cadeaux apparaîtront ici.</p><a class="lien-pilule" href="#/boutique">Aller à la boutique ${I.fleche()}</a></section>`}
+    ${possedes.length ? `<a class="lien-texte" href="#/boutique" style="align-self:center">Voir la boutique</a>` : ''}
+  </main>${onglets('dressing')}`;
+};
+
 function transformationNoel() {
   const r = D.R();
   const stade = D.stadeActuel();
@@ -803,6 +843,7 @@ const actions = {
     verifierNoel(avant);
   },
   toutRetirer() { D.modifier((e) => { e.tenue = {}; }); afficher(); },
+  retirer(el) { D.modifier((e) => { e.tenue[el.dataset.slot] = null; }); afficher(); },
   filtre(el) { ui.filtre = el.dataset.id; afficher(); },
   vueHisto(el) { ui.vueHisto = el.dataset.id; afficher(); },
   plusJours() { ui.joursMax += 30; afficher(); },

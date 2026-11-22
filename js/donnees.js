@@ -36,12 +36,12 @@ export const RARETES = [
 export const rarete = (id) => RARETES.find((r) => r.id === id);
 // Un seul objet par emplacement : un nouvel objet remplace celui du même emplacement.
 export const EMPLACEMENTS = [
-  { id: 'tete', nom: 'Bonnets' },
-  { id: 'cou', nom: 'Écharpes' },
-  { id: 'corps', nom: 'Manteaux' },
-  { id: 'pattesAvant', nom: 'Moufles' },
-  { id: 'pattesArriere', nom: 'Chaussettes' },
-  { id: 'queue', nom: 'Queue' },
+  { id: 'tete', nom: 'Bonnets', zone: 'Tête' },
+  { id: 'cou', nom: 'Écharpes', zone: 'Cou' },
+  { id: 'corps', nom: 'Manteaux', zone: 'Corps' },
+  { id: 'pattesAvant', nom: 'Moufles', zone: 'Pattes avant' },
+  { id: 'pattesArriere', nom: 'Chaussettes', zone: 'Pattes arrière' },
+  { id: 'queue', nom: 'Queue', zone: 'Queue' },
 ];
 const A = (id, nom, emplacement, rar, extra = {}) => ({ id, nom, emplacement, rarete: rar, prix: rarete(rar).prix, ...extra });
 export const BOUTIQUE = [
