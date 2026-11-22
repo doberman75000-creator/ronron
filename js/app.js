@@ -3,14 +3,14 @@ import { sons, activerSons } from './sons.js';
 import { vibrer } from './haptique.js';
 import * as D from './donnees.js';
 
-export const VERSION_APP = '1.2.1';
+export const VERSION_APP = '1.3.0';
 const $app = document.getElementById('app');
 const nb = ' ';
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fr = (n, d = 0) => Number(n).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 const euros = (n, d = 0) => fr(n, d) + nb + '€';
 const pluriel = (n, un, plusieurs) => `${fr(n)} ${n > 1 ? plusieurs : un}`;
-const ui = { filtre: 'tout', confirmEffacer: false, installVu: sessionStorage.getItem('ronron:installVu') === '1', depart: false };
+const ui = { vueHisto: 'jours', joursMax: 30, filtre: 'tout', confirmEffacer: false, installVu: sessionStorage.getItem('ronron:installVu') === '1', depart: false };
 
 // ---------- Icônes ----------
 const svg = (w, inner, extra = '') => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" aria-hidden="true" ${extra}>${inner}</svg>`;
@@ -46,7 +46,7 @@ const icBadge = { patte: I.patte(26), etoile: I.etoileTrait(24), pieces: I.piece
 
 // ---------- Utilitaires d'écran ----------
 function onglets(actif) {
-  const o = [['accueil', 'Accueil', I.patte()], ['parcours', 'Parcours', I.drapeau()], ['quetes', 'Quêtes', I.cible()], ['boutique', 'Boutique', I.cadeau()], ['reglages', 'Réglages', I.reglages()]];
+  const o = [['accueil', 'Accueil', I.patte()], ['parcours', 'Parcours', I.drapeau()], ['historique', 'Historique', I.graphe(24)], ['quetes', 'Quêtes', I.cible()], ['boutique', 'Boutique', I.cadeau()], ['reglages', 'Réglages', I.reglages()]];
   return `<nav class="onglets" aria-label="Navigation principale">${o.map(([id, lib, ic]) => `<a href="#/${id}" ${id === actif ? 'aria-current="page"' : ''}>${ic}${lib}</a>`).join('')}</nav>`;
 }
 let minuterieToast = null;
@@ -342,26 +342,60 @@ ecrans.historique = () => {
     const d = D.versDate(k);
     if ((i === 0 || d.getDate() === 1 || i === jours.length - 1) && x - dernierX > 46) { reperes.push(`<span style="left:${Math.max(0, x - 4)}px">${i === jours.length - 1 ? 'auj.' : D.dateCourte(k)}</span>`); dernierX = x; }
   });
-  const semaines = [];
-  for (let fin = jours.length - 1; fin >= 0 && semaines.length < 13; fin -= 7) {
-    const tranche = jours.slice(Math.max(0, fin - 6), fin + 1).filter((k) => D.connu(k));
-    if (!tranche.length) continue;
-    const moy = tranche.reduce((s, k) => s + D.nbDu(k), 0) / tranche.length;
-    const objMoy = tranche.reduce((s, k) => s + D.objectifDu(k), 0) / tranche.length;
-    const est = tranche.every((k) => e.jours[k] && e.jours[k].estime);
-    const a = jours[Math.max(0, fin - 6)], b = jours[fin];
-    const lib = (D.versDate(a).getMonth() === D.versDate(b).getMonth() ? D.versDate(a).getDate() : D.dateCourte(a)) + '–' + D.dateCourte(b);
-    semaines.push(`<div class="semaine"><span class="lib">${lib}</span><span class="jauge"><i style="width:${Math.min(100, Math.round((moy / Math.max(12, r.reference * 0.7)) * 100))}%;background:${moy <= objMoy ? '#2F9E7A' : '#E2574C'};opacity:${est ? 0.4 : 1}"></i></span><b>${fr(moy, 1)}</b></div>`);
-  }
+  // Semaines glissantes de 7 jours se terminant aujourd'hui (la plus récente d'abord)
+  const blocs = [];
+  for (let fin = jours.length - 1; fin >= 0; fin -= 7) blocs.push(jours.slice(Math.max(0, fin - 6), fin + 1));
+  const statsBloc = (bloc) => {
+    const ks = bloc.filter((k) => D.connu(k));
+    if (!ks.length) return null;
+    const total = ks.reduce((x, k) => x + D.nbDu(k), 0);
+    const complets = ks.filter((k) => k < t);
+    return {
+      total, moy: total / ks.length, objMoy: ks.reduce((x, k) => x + D.objectifDu(k), 0) / ks.length,
+      sous: complets.filter((k) => D.nbDu(k) <= D.objectifDu(k)).length, complets: complets.length,
+      est: ks.every((k) => e.jours[k] && e.jours[k].estime), partiel: ks.some((k) => e.jours[k] && e.jours[k].estime),
+      encours: bloc.includes(t), nbJours: ks.length,
+    };
+  };
+  const stats = blocs.map(statsBloc);
+  const libSemaine = (bloc) => { const a = bloc[0], b = bloc[bloc.length - 1]; return (D.versDate(a).getMonth() === D.versDate(b).getMonth() ? D.versDate(a).getDate() : D.dateCourte(a)) + '–' + D.dateCourte(b); };
+  const semaines = blocs.map((bloc, i) => {
+    const st = stats[i];
+    if (!st) return '';
+    const prec = stats[i + 1];
+    let evol = '';
+    if (prec && prec.moy > 0 && !st.encours) {
+      const d = Math.round(((st.moy - prec.moy) / prec.moy) * 100);
+      evol = d < 0 ? `<span class="puce menthe">↓ ${-d}${nb}%</span>` : d > 0 ? `<span class="puce peche">↑ ${d}${nb}%</span>` : '<span class="puce grise">=</span>';
+    }
+    const ok = st.moy <= st.objMoy;
+    return `<div class="semaine-carte">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${libSemaine(bloc)}${st.encours ? ' <span class="petit">(en cours)</span>' : ''}</b>${evol}</div>
+      <div class="jauge"><i style="width:${Math.min(100, Math.round((st.moy / Math.max(12, r.reference * 0.7)) * 100))}%;background:${ok ? '#2F9E7A' : '#E2574C'};opacity:${st.est ? 0.4 : st.partiel ? 0.7 : 1}"></i></div>
+      <div class="semaine-chiffres"><span><b>${fr(st.moy, 1)}</b> par jour</span><span><b>${fr(st.total)}</b> au total</span><span>objectif <b>${fr(st.objMoy, st.objMoy % 1 ? 1 : 0)}</b></span><span>${st.complets ? `<b>${st.sous}/${st.complets}</b> jours sous l’objectif` : 'jour en cours'}</span></div>
+      ${st.est ? '<span class="petit">Reconstituée à partir des moyennes Smoless</span>' : ''}
+    </div>`;
+  }).join('');
+  const JS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+  const listeJ = [...jours].reverse().slice(0, ui.joursMax).map((k) => {
+    const c = D.connu(k), n = D.nbDu(k), g = D.objectifDu(k), j = e.jours[k] || {};
+    const etat = !c ? ['grise', 'Non renseigné'] : k === t ? ['peche', 'En cours'] : j.estime ? ['grise', 'Estimé'] : n <= g ? ['menthe', 'Sous l’objectif'] : ['peche', 'Au-dessus'];
+    const heures = (j.heures || []).length ? j.heures.join(' · ') : '';
+    return `<button type="button" class="jour-ligne" data-a="voirJour" data-date="${k}">
+      <span class="jour-date"><b>${JS[D.versDate(k).getDay()]} ${D.dateCourte(k)}</b>${heures ? `<small>${heures}</small>` : ''}</span>
+      <span class="puce ${etat[0]}">${etat[1]}</span>
+      <span class="jour-n"><b>${c ? (j.estime ? '≈' : '') + n : '?'}</b><small>/ ${g}</small></span>
+    </button>`;
+  }).join('');
   const manquants = D.joursManquants();
   const dates = D.datesStades();
   const stades = Object.keys(dates).map(Number).sort();
   const nbJoursConnus = jours.filter((k) => D.connu(k)).length;
   const hier = D.ajouterJours(t, -1);
   const dateDefaut = manquants[0] || (hier >= r.debut ? hier : t);
-  return `<main class="ecran sans-onglets">
-    <div class="entete"><a class="retour" href="#/parcours">${I.retour()} Parcours</a>${e.source ? `<span class="puce menthe">${I.check(14)} Historique importé</span>` : ''}</div>
-    <div style="padding:0 4px"><h1 class="titre-font" style="margin:0;font-size:28px;font-weight:600">Ton historique</h1>
+  return `<main class="ecran">
+    <div class="entete"><h1>Historique</h1>${e.source ? `<span class="puce menthe">${I.check(14)} Smoless importé</span>` : ''}</div>
+    <div style="padding:0 4px;margin-top:-8px">
     <p class="texte-doux">Depuis le ${D.dateCourte(r.debut)} · ${pluriel(jours.length, 'jour', 'jours')}.</p></div>
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
       <div class="carte"><div class="titre-font" style="font-size:26px;font-weight:600">${r.reference} → ${D.objectifActuel()}</div><div class="petit">par jour · −${Math.round((1 - D.objectifActuel() / r.reference) * 100)}${nb}%</div></div>
@@ -369,15 +403,25 @@ ecrans.historique = () => {
       <div class="carte"><div class="titre-font" style="font-size:26px;font-weight:600;color:#1F7A5C">${euros(D.eurosEconomises())}</div><div class="petit">économisés</div></div>
       <div class="carte"><div class="titre-font" style="font-size:26px;font-weight:600">${fr(fumees / Math.max(1, nbJoursConnus), 1)}</div><div class="petit">par jour en moyenne</div></div>
     </div>
+    <div class="segments-vue" role="tablist" aria-label="Affichage">
+      <button type="button" role="tab" aria-selected="${ui.vueHisto === 'jours'}" data-a="vueHisto" data-id="jours">Jour par jour</button>
+      <button type="button" role="tab" aria-selected="${ui.vueHisto === 'semaines'}" data-a="vueHisto" data-id="semaines">Semaine par semaine</button>
+    </div>
+    ${ui.vueHisto === 'jours' ? `
     <section class="carte" style="display:flex;flex-direction:column;gap:10px">
-      <div><h2 class="titre-font" style="margin:0;font-size:18px;font-weight:600">Jour par jour</h2><span class="petit">${connus ? `${sousOk} sur ${connus} jours relevés sous l’objectif` : ''}</span></div>
+      <div><h2 class="titre-font" style="margin:0;font-size:18px;font-weight:600">Courbe des jours</h2><span class="petit">${connus ? `${sousOk} sur ${connus} jours relevés sous l’objectif` : ''}</span></div>
       <div class="graphe" id="graphe"><div style="width:${Math.max(largeur, 10)}px;min-width:100%"><div class="barres" role="img" aria-label="Cigarettes par jour depuis le début">${barres}</div><div class="reperes" style="width:${largeur}px">${reperes.join('')}</div></div></div>
       <div class="legende"><span><i style="background:#2F9E7A"></i>Sous l’objectif</span><span><i style="background:#E2574C"></i>Au-dessus</span><span><i style="background:#F1E6DA"></i>Objectif</span>${jours.some((k) => e.jours[k] && e.jours[k].estime) ? '<span><i style="background:#2F9E7A;opacity:.4"></i>Estimé</span>' : ''}</div>
     </section>
-    <section class="carte" style="display:flex;flex-direction:column;gap:6px">
-      <h2 class="titre-font" style="margin:0 0 4px;font-size:18px;font-weight:600">Semaine par semaine</h2>${semaines.join('')}
-      <p class="texte-doux" style="font-size:12px;margin-top:4px">Moyenne par jour. Barre pâle${nb}: semaine reconstituée à partir de moyennes.</p>
-    </section>
+    <section class="carte serree">
+      <div style="padding:14px 14px 6px"><h2 class="titre-font" style="margin:0;font-size:18px;font-weight:600">Détail jour par jour</h2><span class="petit">Touche un jour pour le corriger. Les heures s’affichent pour les jours notés dans Ronron.</span></div>
+      <div class="liste">${listeJ}</div>
+      ${jours.length > ui.joursMax ? `<button class="lien-texte" type="button" data-a="plusJours" style="width:100%;border-top:1px solid var(--trait)">Voir 30 jours de plus (${jours.length - ui.joursMax} restants)</button>` : ''}
+    </section>` : `
+    <section class="carte" style="display:flex;flex-direction:column;gap:8px">
+      <div><h2 class="titre-font" style="margin:0;font-size:18px;font-weight:600">Semaine par semaine</h2><span class="petit">Blocs de 7 jours qui se terminent aujourd’hui. La flèche compare à la semaine précédente.</span></div>
+      ${semaines}
+    </section>`}
     <section class="carte" style="display:flex;flex-direction:column;gap:8px">
       <h2 class="titre-font" style="margin:0 0 2px;font-size:18px;font-weight:600">Les stades de ${esc(r.nom)}</h2>
       ${stades.map((s) => `<div style="display:flex;align-items:center;gap:10px">${chat({ stade: s, taille: 44 })}<b style="flex:1">${D.PALIERS[s - 1].nom}</b><span class="petit">${D.dateCourte(dates[s])}</span></div>`).join('')}
@@ -394,7 +438,7 @@ ecrans.historique = () => {
       </div>
       <button class="btn encre" type="button" data-a="corrEnregistrer" style="height:50px;font-size:15px">Enregistrer ce jour</button>
     </section>
-  </main>`;
+  </main>${onglets('historique')}`;
 };
 
 ecrans.quetes = () => {
@@ -760,6 +804,15 @@ const actions = {
   },
   toutRetirer() { D.modifier((e) => { e.tenue = {}; }); afficher(); },
   filtre(el) { ui.filtre = el.dataset.id; afficher(); },
+  vueHisto(el) { ui.vueHisto = el.dataset.id; afficher(); },
+  plusJours() { ui.joursMax += 30; afficher(); },
+  voirJour(el) {
+    const input = document.getElementById('date-corr');
+    if (!input) return;
+    input.value = el.dataset.date;
+    syncCorr();
+    document.getElementById('corriger').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  },
   revoirChacha() {
     const e = D.lire();
     if (!D.PIECES_NOEL.every((id) => e.possede.includes(id))) return;

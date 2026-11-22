@@ -35,6 +35,7 @@ Sinon, **Commencer de zéro** : on indique combien de cigarettes par jour aujour
 |---|---|
 | Noter une cigarette | Accueil → gros bouton patte (un 2e tap en moins d’une seconde est ignoré) |
 | Corriger une erreur | Accueil → « Annuler la dernière », ou Historique → Corriger un jour |
+| Voir ses stats en détail | Onglet Historique : jour par jour (heures de chaque cigarette) ou semaine par semaine (moyenne, total, jours sous l’objectif, évolution) |
 | Faire le bilan du soir et caresser Miette | Accueil → icône lune |
 | Valider un palier | Quand la moyenne des 3 derniers jours passe sous l’objectif, un bandeau doré apparaît. C’est elle qui accepte ou attend. |
 | Quêtes et badges | Onglet Quêtes |
