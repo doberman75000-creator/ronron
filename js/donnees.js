@@ -29,6 +29,15 @@ export const BOUTIQUE = [
   { id: 'bonnet', nom: 'Bonnet en laine', prix: null, defi: true },
   { id: 'couronne', nom: 'Couronne de fleurs', prix: 1200 },
 ];
+// Cadeau surprise : prix fixe, tirage parmi les articles existants.
+// Doublon : la moitié du prix est rendue (on ne peut donc jamais y gagner en boucle).
+export const CADEAU = { prix: 400, rembourseDoublon: 200, chances: { noeud: 60, bonnet: 30, couronne: 10 } };
+export function tirerCadeau(alea = Math.random()) {
+  let cumul = 0;
+  const total = Object.values(CADEAU.chances).reduce((s, p) => s + p, 0);
+  for (const [id, p] of Object.entries(CADEAU.chances)) { cumul += p / total; if (alea < cumul) return id; }
+  return Object.keys(CADEAU.chances).pop();
+}
 export const QUETES = [
   { id: 'reveil', titre: 'Réveil tranquille', desc: 'Première cigarette après 9 h', gain: 10 },
   { id: 'cafe', titre: 'Café solo', desc: 'Un café sans cigarette à côté', gain: 5 },
@@ -52,10 +61,19 @@ export function charger() {
 }
 export const lire = () => etat;
 export function enregistrer() {
-  try { localStorage.setItem(CLE, JSON.stringify(etat)); } catch (e) { console.error('Ronron : enregistrement impossible', e); }
+  let ok = true;
+  try { localStorage.setItem(CLE, JSON.stringify(etat)); } catch (e) { ok = false; console.error('Ronron : enregistrement impossible', e); }
   abonnes.forEach((fn) => fn(etat));
+  return ok;
 }
-export function modifier(fn) { fn(etat); enregistrer(); }
+// Renvoie true si la modification est bien enregistrée ; sinon l'état précédent est restauré.
+export function modifier(fn) {
+  const avant = JSON.stringify(etat);
+  fn(etat);
+  if (enregistrer()) return true;
+  etat = JSON.parse(avant);
+  return false;
+}
 export function effacerTout() { localStorage.removeItem(CLE); etat = null; abonnes.forEach((fn) => fn(etat)); }
 
 export function nouvelEtat({ nom = 'Miette', reference = 15, paquet = 20, prix = 12.6, debut = aujourdhui() } = {}) {

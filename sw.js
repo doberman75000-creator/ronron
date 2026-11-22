@@ -1,11 +1,11 @@
 // Ronron — service worker : l'appli marche hors ligne et se met à jour proprement.
 // ⚠️ À CHAQUE MISE À JOUR : augmente VERSION (et VERSION_APP dans js/app.js).
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 const CACHE = 'ronron-' + VERSION;
 const FICHIERS = [
   './', './index.html', './manifest.webmanifest',
   './css/app.css', './css/polices.css',
-  './js/app.js', './js/chat.js', './js/donnees.js', './js/sons.js',
+  './js/app.js', './js/chat.js', './js/donnees.js', './js/sons.js', './js/haptique.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png',
   './fonts/fredoka-latin-500-normal.woff2', './fonts/fredoka-latin-600-normal.woff2',
   './fonts/nunito-latin-600-normal.woff2', './fonts/nunito-latin-700-normal.woff2', './fonts/nunito-latin-800-normal.woff2',

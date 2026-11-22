@@ -1,8 +1,9 @@
 import { chatSVG } from './chat.js';
 import { sons, activerSons } from './sons.js';
+import { vibrer } from './haptique.js';
 import * as D from './donnees.js';
 
-export const VERSION_APP = '1.0.0';
+export const VERSION_APP = '1.0.1';
 const $app = document.getElementById('app');
 const nb = ' ';
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -276,6 +277,26 @@ function fete({ titre, sousTitre, stade, nbEtoiles, prochain }) {
   sons.fete();
 }
 
+function revelerCadeau(article, doublon) {
+  const el = document.createElement('div');
+  el.className = 'fete';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-label', 'Cadeau surprise');
+  const pluie = Array.from({ length: 12 }, (_, i) => `<span style="left:${4 + ((i * 97) % 92)}%;animation-delay:${((i * 37) % 120) / 100}s">${i % 2 ? I.etoile(20) : `<span style="color:#F28C38">${I.patte(22)}</span>`}</span>`).join('');
+  el.innerHTML = `<div class="pluie" aria-hidden="true">${pluie}</div>
+    <div class="fete-contenu" style="justify-content:center">
+      <span class="puce pop" style="background:#FFE7A8;color:#6B4500;font-size:13px;letter-spacing:.08em">CADEAU SURPRISE</span>
+      <div style="position:relative;width:232px;height:232px"><div class="halo" aria-hidden="true"></div><div class="saute">${chatSVG({ stade: Math.min(D.stadeActuel(), 5), taille: 232, humeur: 'joie', accessoire: article.id })}</div></div>
+      <h1 class="titre-font pop" style="margin:0;text-align:center;font-size:30px;font-weight:600;animation-delay:.3s">${article.nom}</h1>
+      <p class="texte-doux" style="text-align:center;font-size:15px">${doublon ? `Déjà dans ton dressing${nb}: ${fr(D.CADEAU.rembourseDoublon)} croquettes rendues.` : `Ajouté à ton dressing et porté par ${esc(D.R().nom)}.`}</p>
+      <button class="btn encre" type="button" data-fermer style="margin-top:12px">Super</button>
+    </div>`;
+  el.querySelector('[data-fermer]').addEventListener('click', () => { el.remove(); afficher(); });
+  document.body.appendChild(el);
+  el.querySelector('[data-fermer]').focus({ preventScroll: true });
+  sons.chanson();
+}
+
 ecrans.parcours = () => {
   const e = D.lire(), r = e.reglages, ref = r.reference;
   const st = D.stadeActuel(), et = D.etoiles(), dates = D.datesStades();
@@ -407,6 +428,12 @@ ecrans.quetes = () => {
     <div class="grille3">${bdg.map((b) => `<div class="badge ${b.secret ? 'secret' : b.ok ? '' : 'ko'}"><span class="ic">${icBadge[b.icone]}</span><b>${b.nom}</b><small>${b.detail}</small></div>`).join('')}</div>
     <div style="display:flex;justify-content:space-between;align-items:baseline;padding:0 4px"><h2 class="section-titre" style="margin:0">Boutique de ${esc(r.nom)}</h2><span class="petit">en croquettes</span></div>
     <div class="grille3">${articles}</div>
+    <section class="carte" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><b class="titre-font" style="font-size:18px;font-weight:600">Cadeau surprise</b><span class="puce peche">${fr(D.CADEAU.prix)} croquettes</span></div>
+      <div class="petit" style="display:flex;flex-direction:column;gap:2px">${D.BOUTIQUE.map((a) => `<span style="display:flex;justify-content:space-between"><span>${a.nom}</span><span>${D.CADEAU.chances[a.id]}${nb}%</span></span>`).join('')}</div>
+      <p class="texte-doux" style="font-size:12px">Déjà dans ton dressing${nb}? On te rend ${fr(D.CADEAU.rembourseDoublon)} croquettes.</p>
+      ${solde >= D.CADEAU.prix ? `<button class="btn orange" type="button" data-a="cadeau" style="height:50px;font-size:15px">Ouvrir un cadeau · ${fr(D.CADEAU.prix)}</button>` : `<button class="btn contour" type="button" disabled style="height:50px;font-size:15px;opacity:.6">Il manque ${fr(D.CADEAU.prix - solde)} croquettes</button>`}
+    </section>
   </main>${onglets('quetes')}`;
 };
 
@@ -522,7 +549,9 @@ const actions = {
     if (now - dernierTap < 1200) return;
     dernierTap = now;
     const t = D.aujourdhui();
-    D.modifier((e) => { const j = e.jours[t] || { n: 0, heures: [] }; j.n += 1; j.heures = [...(j.heures || []), D.heureMaintenant()]; e.jours[t] = j; });
+    const ok = D.modifier((e) => { const j = e.jours[t] || { n: 0, heures: [] }; j.n += 1; j.heures = [...(j.heures || []), D.heureMaintenant()]; e.jours[t] = j; });
+    if (!ok) { dernierTap = 0; toast('Enregistrement impossible : la cigarette n’a pas été notée. Réessaie.'); return; }
+    vibrer();
     afficher();
     const c = document.getElementById('compte');
     if (c) { c.classList.remove('pulse'); void c.offsetWidth; c.classList.add('pulse'); }
@@ -591,6 +620,22 @@ const actions = {
     if (!a || D.croquettes() < a.prix) return;
     D.modifier((e) => { e.depenses.push({ date: D.aujourdhui(), objet: a.id, n: a.prix }); e.possede.push(a.id); e.porte = a.id; });
     sons.mrrp(); afficher(); toast(`${a.nom} pour ${D.R().nom}${nb}!`);
+  },
+  cadeau() {
+    if (D.croquettes() < D.CADEAU.prix) { toast('Pas assez de croquettes pour ce cadeau.'); return; }
+    const tab = new Uint32Array(1); crypto.getRandomValues(tab);
+    const id = D.tirerCadeau(tab[0] / 4294967296);
+    const article = D.BOUTIQUE.find((a) => a.id === id);
+    let doublon = false;
+    const ok = D.modifier((e) => {
+      e.depenses.push({ date: D.aujourdhui(), objet: 'cadeau', n: D.CADEAU.prix });
+      doublon = e.possede.includes(id);
+      if (doublon) e.bonus.push({ date: D.aujourdhui(), type: 'cadeau-doublon', n: D.CADEAU.rembourseDoublon });
+      else { e.possede.push(id); e.porte = id; }
+    });
+    if (!ok) { toast('Enregistrement impossible : rien n’a été débité.'); return; }
+    afficher();
+    revelerCadeau(article, doublon);
   },
   recuperer(el) { D.modifier((e) => { if (!e.possede.includes(el.dataset.id)) e.possede.push(el.dataset.id); e.porte = el.dataset.id; }); sons.chanson(); afficher(); },
   porter(el) { D.modifier((e) => { e.porte = e.porte === el.dataset.id ? null : el.dataset.id; }); afficher(); },
