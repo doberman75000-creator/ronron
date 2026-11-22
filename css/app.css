@@ -269,3 +269,7 @@ body.sans-anim *, body.sans-anim *::before, body.sans-anim *::after { animation:
 @keyframes flash { 0%, 75% { opacity: 0 } 88% { opacity: 1 } 100% { opacity: 0 } }
 @keyframes brille { 0%,100% { transform: translateX(-50%) scale(1) } 50% { transform: translateX(-50%) scale(1.15) } }
 .transfo .fete-contenu { z-index: 1; }
+.carte.offert { position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 12px; background: radial-gradient(circle at 50% 0%, #3E3470, #2A2246 80%); border-color: #2A2246; }
+.fete.offert-fete { background: radial-gradient(circle at 50% 40%, #3E3470, #1D1733 70%); }
+.fete.offert-fete h1, .fete.offert-fete .texte-doux { color: #FFF4E6; }
+.fete.offert-fete .fete-contenu { z-index: 1; }

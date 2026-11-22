@@ -3,7 +3,7 @@ import { sons, activerSons } from './sons.js';
 import { vibrer } from './haptique.js';
 import * as D from './donnees.js';
 
-export const VERSION_APP = '1.1.0';
+export const VERSION_APP = '1.2.0';
 const $app = document.getElementById('app');
 const nb = ' ';
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -117,6 +117,7 @@ ecrans.accueil = () => {
       <div><h1>Ronron</h1><p class="sous">Jour ${D.numeroJour()} · objectif ${obj} par jour</p></div>
       <a class="btn-rond" href="#/bilan" aria-label="Bilan du soir">${I.lune()}${soir ? '<span class="point"></span>' : ''}</a>
     </header>
+    ${D.cadeauOffertDispo() ? `<a class="bandeau or" href="#/boutique">${I.cadeau(26)}<span><b>${D.CADEAU_OFFERT.titre}</b><small>Un cadeau surprise t’attend dans la Boutique. C’est offert${nb}!</small></span></a>` : ''}
     ${prop ? `<a class="bandeau or" href="#/palier">${I.etoileTrait(26)}<span><b>${esc(r.nom)} est prête à grandir</b><small>Moyenne sur 3 jours${nb}: ${fr(prop.moyenne, 1)}. On passe à ${prop.a}${nb}?</small></span></a>` : ''}
     ${manque ? `<a class="bandeau peche" href="#/historique#corriger">${I.graphe(22)}<span><b>${pluriel(manque, 'jour', 'jours')} sans données</b><small>Entre l’import et l’installation. Touche pour les renseigner.</small></span></a>` : ''}
     ${!manque && joursSansSauvegarde > 14 && D.numeroJour() > 3 ? `<a class="bandeau peche" href="#/reglages#donnees">${I.telecharger(22)}<span><b>Pense à sauvegarder</b><small>${e.sauvegarde ? `Dernière sauvegarde il y a ${joursSansSauvegarde} jours.` : 'Aucune sauvegarde pour l’instant.'}</small></span></a>` : ''}
@@ -281,17 +282,18 @@ function fete({ titre, sousTitre, stade, nbEtoiles, prochain }) {
 function revelerCadeau(tirage) {
   const art = tirage.article, rar = D.rarete(tirage.rarete);
   const el = document.createElement('div');
-  el.className = 'fete';
+  el.className = tirage.offert ? 'fete offert-fete' : 'fete';
   el.setAttribute('role', 'dialog');
   el.setAttribute('aria-label', 'Cadeau surprise');
   const pluie = Array.from({ length: 12 }, (_, i) => `<span style="left:${4 + ((i * 97) % 92)}%;animation-delay:${((i * 37) % 120) / 100}s">${i % 2 ? I.etoile(20) : `<span style="color:#F28C38">${I.patte(22)}</span>`}</span>`).join('');
-  el.innerHTML = `<div class="pluie" aria-hidden="true">${pluie}</div>
+  el.innerHTML = `${tirage.offert ? `<div class="neige" aria-hidden="true">${flocons(26)}</div>` : `<div class="pluie" aria-hidden="true">${pluie}</div>`}
     <div class="fete-contenu" style="justify-content:center">
+      ${tirage.offert ? `<span class="titre-font pop" style="font-size:20px;font-weight:600;color:#FFF4E6;text-align:center">${D.CADEAU_OFFERT.titre}</span>` : ''}
       <span class="puce pop" style="background:${rar.fond};color:${rar.texte};font-size:13px;letter-spacing:.08em">${rar.nom.toUpperCase()}</span>
       <div style="position:relative;width:232px;height:232px"><div class="halo" aria-hidden="true" style="background:${rar.fond}"></div><div class="saute">${chatSVG({ stade: Math.min(D.stadeActuel(), 5), taille: 232, humeur: 'joie', tenue: art ? [art.id] : D.tenueListe() })}</div></div>
       <h1 class="titre-font pop" style="margin:0;text-align:center;font-size:30px;font-weight:600;animation-delay:.3s">${art ? art.nom : 'Collection ' + rar.nom.toLowerCase() + ' complète'}</h1>
       <p class="texte-doux" style="text-align:center;font-size:15px">${art ? `Ajouté à ton dressing et porté par ${esc(D.R().nom)}.` : `Tu as déjà tous les articles ${rar.nom.toLowerCase()}s${nb}: ${fr(D.CADEAU.rembourseDoublon)} croquettes rendues.`}</p>
-      <button class="btn encre" type="button" data-fermer style="margin-top:12px">Super</button>
+      <button class="btn ${tirage.offert ? 'orange' : 'encre'}" type="button" data-fermer style="margin-top:12px">Super</button>
     </div>`;
   el.querySelector('[data-fermer]').addEventListener('click', () => { el.remove(); afficher(); if (tirage.avantNoel === false) verifierNoel(false); });
   document.body.appendChild(el);
@@ -412,6 +414,10 @@ ecrans.quetes = () => {
     <div style="display:flex;justify-content:space-between;padding:0 4px"><h2 class="section-titre" style="margin:0">Aujourd’hui</h2><span class="petit">${nq} / 3 terminées</span></div>
     ${D.QUETES.map((d) => `<button class="quete" type="button" data-a="quete" data-id="${d.id}" aria-pressed="${q[d.id] ? 'true' : 'false'}"><span class="coche">${q[d.id] ? I.check() : ''}</span><span style="flex:1;min-width:0"><b>${d.titre}</b><small>${d.desc}</small></span><span class="puce peche">+${d.gain}</span></button>`).join('')}
     ${nq === 3 ? `<div class="chanson pop"><div style="position:relative;width:96px;height:96px;flex:none"><div class="danse">${chat({ stade: D.stadeActuel(), taille: 96, humeur: 'joie' })}</div></div><div style="flex:1;display:flex;flex-direction:column;gap:4px"><b class="titre-font" style="font-size:18px;font-weight:600;color:#4A3000">Les 3 quêtes du jour${nb}!</b><span style="font-size:13px;font-weight:700;color:#5C3D00">${esc(r.nom)} te chante sa chanson. +${D.BONUS_QUETES} croquettes bonus.</span><button class="lien-pilule" type="button" data-a="chanter">${I.note(16)} Réécouter</button></div></div>` : ''}
+    <a class="carte chacha" href="#/boutique" style="text-decoration:none">
+      <div style="display:flex;align-items:center;gap:10px"><span class="etoile-noel" aria-hidden="true">${I.etoile(30)}</span>
+      <div style="flex:1"><span class="maj petit" style="color:var(--rouille)">Quête spéciale de Noël</span><br><b class="titre-font" style="font-size:18px;font-weight:600">Super Chacha de Noël</b><br><span class="petit">${e.superChacha ? `Accomplie le ${D.dateCourte(e.superChacha)} : ${esc(r.nom)} est devenue Mère Noël.` : `Réunis la tenue de Noël (${D.PIECES_NOEL.filter((id) => e.possede.includes(id)).length} / 5 pièces) et porte-la en entier.`}</span></div>${e.superChacha ? `<span class="puce menthe">${I.check(14)}</span>` : I.chevron()}</div>
+    </a>
     <section class="defi">
       <div style="display:flex;justify-content:space-between"><span class="maj" style="font-size:12px;font-weight:800;color:#E9CDB3">Défi de la semaine</span><span style="font-size:12px;font-weight:700;color:#E9CDB3">${pluriel(defi.joursRestants, 'jour restant', 'jours restants')}</span></div>
       <div><div class="titre-font" style="font-size:22px;font-weight:600">Matins libres</div><div style="font-size:14px;color:#EBD8C6">3 matinées sans cigarette avant 10${nb}h (comptées automatiquement)</div></div>
@@ -461,10 +467,11 @@ ecrans.boutique = () => {
         ${porte.length ? '<button class="lien-texte" type="button" data-a="toutRetirer" style="align-self:flex-start;padding:0">Tout retirer</button>' : ''}
       </div>
     </section>
+    ${D.cadeauOffertDispo() ? `<section class="carte offert"><div class="neige" aria-hidden="true">${flocons(10)}</div><div style="position:relative;display:flex;align-items:center;gap:12px"><span class="etoile-noel" style="background:#C8283C;color:#FFF4E6">${I.cadeau(26)}</span><div style="flex:1"><b class="titre-font" style="font-size:18px;font-weight:600;color:#FFF4E6">${D.CADEAU_OFFERT.titre}</b><br><span class="petit" style="color:#E4DCF7">Offert, une seule fois. Mêmes chances que le cadeau surprise.</span></div></div><button class="btn orange" type="button" data-a="cadeauOffert" style="position:relative;height:50px;font-size:15px">Ouvrir mon cadeau offert</button></section>` : ''}
     <section class="carte chacha">
       <div style="display:flex;align-items:center;gap:10px">
         <span class="etoile-noel" aria-hidden="true">${I.etoile(30)}</span>
-        <div style="flex:1"><b class="titre-font" style="font-size:18px;font-weight:600">Super Chacha de Noël</b><br><span class="petit">Porte les 5 pièces légendaires de Noël et ${esc(r.nom)} se transforme en Mère Noël.</span></div>
+        <div style="flex:1"><b class="titre-font" style="font-size:18px;font-weight:600">Quête de Noël : Super Chacha</b><br><span class="petit">${e.superChacha ? `Accomplie le ${D.dateCourte(e.superChacha)}. ` : ''}Réunis et porte les 5 pièces légendaires de Noël : ${esc(r.nom)} se transforme en Mère Noël.</span></div>
       </div>
       <div class="pieces-noel">${D.PIECES_NOEL.map((id) => `<span class="${e.possede.includes(id) ? (porte.includes(id) ? 'porte' : 'ok') : ''}" title="${D.article(id).nom}">${chatSVG({ stade, taille: 50, tenue: [id], silhouette: !e.possede.includes(id) })}</span>`).join('')}</div>
       <div style="display:flex;justify-content:space-between;align-items:center"><span class="petit">${nbNoel} / 5 pièces dans ton dressing</span>${e.superChacha ? `<button class="puce encre" type="button" data-a="revoirChacha" style="border:none;min-height:34px">${complet ? 'Revoir la transformation' : 'Remettre la tenue'}</button>` : ''}</div>
@@ -481,6 +488,9 @@ ecrans.boutique = () => {
   </main>${onglets('boutique')}`;
 };
 
+function flocons(n) {
+  return Array.from({ length: n }, (_, i) => `<span style="left:${(i * 47) % 100}%;animation-delay:${((i * 29) % 300) / 100}s;animation-duration:${3 + ((i * 17) % 30) / 10}s"><svg width="${10 + (i % 4) * 5}" height="${10 + (i % 4) * 5}" viewBox="0 0 20 20"><path d="M10 1v18M1 10h18M3.6 3.6l12.8 12.8M3.6 16.4L16.4 3.6" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/></svg></span>`).join('');
+}
 function transformationNoel() {
   const r = D.R();
   const stade = D.stadeActuel();
@@ -719,6 +729,20 @@ const actions = {
     if (!ok) { toast('Enregistrement impossible : rien n’a été débité.'); return; }
     afficher();
     revelerCadeau({ ...tirage, avantNoel: avant });
+  },
+  cadeauOffert() {
+    if (!D.cadeauOffertDispo()) return;
+    const tab = new Uint32Array(2); crypto.getRandomValues(tab);
+    const tirage = D.tirerCadeau(D.lire().possede, tab[0] / 4294967296, tab[1] / 4294967296);
+    const avant = D.noelComplet();
+    const ok = D.modifier((e) => {
+      e.cadeauxOfferts = Object.assign({}, e.cadeauxOfferts, { [D.CADEAU_OFFERT.id]: D.aujourdhui() });
+      if (tirage.article) { e.possede.push(tirage.article.id); e.tenue[tirage.article.emplacement] = tirage.article.id; }
+      else e.bonus.push({ date: D.aujourdhui(), type: 'cadeau-offert-doublon', n: D.CADEAU.rembourseDoublon });
+    });
+    if (!ok) { toast('Enregistrement impossible : le cadeau reste disponible.'); return; }
+    afficher();
+    revelerCadeau({ ...tirage, avantNoel: avant, offert: true });
   },
   recuperer(el) {
     const a = D.article(el.dataset.id);

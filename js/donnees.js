@@ -27,11 +27,11 @@ export const seuilStade = (ref, stade) => stade >= 6 ? 0 : Math.floor(ref * (1 -
 // ---------- Boutique ----------
 // Raretés : le prix monte avec la rareté. Chances = tirage du cadeau surprise.
 export const RARETES = [
-  { id: 'commun', nom: 'Commun', prix: 100, chance: 50, fond: '#F1E6DA', texte: '#6B5442' },
-  { id: 'peu-commun', nom: 'Peu commun', prix: 200, chance: 28, fond: '#DDF3EA', texte: '#1F6B51' },
-  { id: 'rare', nom: 'Rare', prix: 350, chance: 15, fond: '#E1E9F7', texte: '#2B4C8C' },
-  { id: 'epique', nom: 'Épique', prix: 500, chance: 5, fond: '#E7DEFA', texte: '#5B3FC4' },
-  { id: 'legendaire', nom: 'Légendaire', prix: 700, chance: 2, fond: '#FFE7A8', texte: '#7A4E00' },
+  { id: 'commun', nom: 'Commun', prix: 60, chance: 50, fond: '#F1E6DA', texte: '#6B5442' },
+  { id: 'peu-commun', nom: 'Peu commun', prix: 120, chance: 28, fond: '#DDF3EA', texte: '#1F6B51' },
+  { id: 'rare', nom: 'Rare', prix: 200, chance: 15, fond: '#E1E9F7', texte: '#2B4C8C' },
+  { id: 'epique', nom: 'Épique', prix: 300, chance: 5, fond: '#E7DEFA', texte: '#5B3FC4' },
+  { id: 'legendaire', nom: 'Légendaire', prix: 400, chance: 2, fond: '#FFE7A8', texte: '#7A4E00' },
 ];
 export const rarete = (id) => RARETES.find((r) => r.id === id);
 // Un seul objet par emplacement : un nouvel objet remplace celui du même emplacement.
@@ -74,7 +74,10 @@ export const PIECES_NOEL = BOUTIQUE.filter((a) => a.noel).map((a) => a.id);
 // Cadeau surprise : on tire d'abord la rareté, puis un objet de cette rareté
 // pas encore possédé (protection contre les doublons). Si toute la rareté est
 // déjà possédée, la moitié du prix est rendue : impossible d'y gagner en boucle.
-export const CADEAU = { prix: 180, rembourseDoublon: 90 };
+export const CADEAU = { prix: 100, rembourseDoublon: 50 };
+// Cadeau offert une seule fois avec la mise à jour de Noël (mêmes chances, gratuit).
+export const CADEAU_OFFERT = { id: 'maj-noel-2026', titre: 'Cadeau de la mise à jour de Noël' };
+export const cadeauOffertDispo = (e = etat) => !!e && !(e.cadeauxOfferts && e.cadeauxOfferts[CADEAU_OFFERT.id]);
 export function tirerCadeau(possede, alea1 = Math.random(), alea2 = Math.random()) {
   let cumul = 0;
   let rar = RARETES[RARETES.length - 1];
@@ -350,6 +353,7 @@ export function badges() {
     { id: 'semaine', nom: 'Semaine de ronron', detail: maxSerie >= 7 ? '7 jours sous l’objectif' : `${Math.min(7, serieRonron())} / 7 jours`, ok: maxSerie >= 7, progres: Math.min(1, serieRonron() / 7), icone: 'coeur' },
     { id: 'parfaite', nom: 'Journée parfaite', detail: 'Objectif tenu + 3 quêtes', ok: parfaite, icone: 'soleil' },
     { id: 'nuit', nom: 'Nuit calme', detail: nuits >= 5 ? 'Rien après 22 h, 5 soirs' : `${nuits} / 5 soirs`, ok: nuits >= 5, icone: 'lune' },
+    { id: 'chacha', nom: 'Super Chacha de Noël', detail: etat.superChacha ? 'Mère Noël débloquée' : `Quête de Noël : ${PIECES_NOEL.filter((id) => etat.possede.includes(id)).length} / 5`, ok: !!etat.superChacha, icone: 'etoile' },
     { id: 'vies', nom: 'Neuf vies', detail: maxZero >= 30 ? '30 jours sans fumer' : 'Secret', ok: maxZero >= 30, secret: maxZero < 30, icone: 'cadenas' },
   ];
 }
